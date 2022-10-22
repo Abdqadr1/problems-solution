@@ -339,9 +339,8 @@ public class DynamicProgramming {
             while(!queue.isEmpty()){
                 Character ch = queue.poll();
                 Character ch2 = queue.poll();
-                int last = result.length()-1;
                 if(ch != null && ch2 != null){
-                    int count1 = charMap.get(ch), count2 = charMap.get(ch2);
+                    int count1 = charMap.get(ch), count2 = charMap.get(ch2), last = result.length()-1;
                     if(count1 > 1 && last == -1){
                         result.append(ch).append(ch2).append(ch);
                         count1 -= 2;
@@ -364,14 +363,182 @@ public class DynamicProgramming {
                     if(count > 1 || result.charAt(result.length()-1) == curr) return "";
                     result.append(curr.toString().repeat(count));
                 }
-                System.out.println(result);
-                System.out.println(charMap);
             }
             return result.toString();
         }
-        public int compareVersion(String version1, String version2) {
+        public static int compareVersion(String version1, String version2) {
+            String[] revisions1Array = version1.split("\\.");
+            String[] revisions2Array = version2.split("\\.");
+            int len = Math.max(revisions1Array.length, revisions2Array.length);
+            for (int i = 0; i < len; i++) {
+                String r1 = i < revisions1Array.length ? revisions1Array[i] : "0";
+                String r2 = i < revisions2Array.length ? revisions2Array[i] : "0";
+                int v1 = Integer.parseInt(r1);
+                int v2 = Integer.parseInt(r2);
+                if(v1 < v2) return -1;
+                if(v2 < v1) return 1;
+            }
             return 0;
         }
+        public static String simplifyPath(String path) {
+            Deque<String> stack = new ArrayDeque<>();
+            Set<String> invalid = new HashSet<>(Arrays.asList("..",".",""));
+            for (String dir : path.split("/")) {
+                if (dir.equals("..") && !stack.isEmpty()) stack.pop();
+                else if (!invalid.contains(dir)) stack.push(dir);
+            }
+            StringBuilder res = new StringBuilder();
+            for (String dir : stack) res.insert(0, "/" + dir);
+            return (res.length() == 0) ? "/" : res.toString();
+        }
+        public static List<List<String>> groupAnagrams(String[] strs) {
+            Map<String, List<String>> map = new HashMap<>();
+            for (String str : strs){
+                char[] chars = str.toCharArray();
+                Arrays.sort(chars);
+                String key = String.valueOf(chars);
+                if(!map.containsKey(key)) map.put(key, new ArrayList<>());
+                map.get(key).add(str);
+            }
+            return new ArrayList<>(map.values());
+        }
+        public static long numberOfWays(String s) {
+            long zero=0, one=0, zeroOne=0, oneZero=0, count=0;
+            for(char ch : s.toCharArray()){
+                if(ch == '1'){
+                    one++;
+                    zeroOne += zero;
+                    count += oneZero;
+                }else {
+                    zero++;
+                    oneZero += one;
+                    count += zeroOne;
+                }
+            }
+            return count;
+        }
+        public static String multiply(String num1, String num2) {
+            if(num1.equals("0") || num2.equals("0")) return "0";
+            int[] ans = new int[num1.length() + num2.length()];
+            for (int i = num1.length()-1; i >= 0; i--) {
+                char ch1 = num1.charAt(i);
+                for (int j = num2.length()-1; j >= 0; j--) {
+                    char ch2 = num2.charAt(j);
+                    int prod = (ch1 - '0') * (ch2 - '0');
+                    int p2 = i + j + 1;
+                    int sum = prod + ans[p2];
+                    ans[i + j] += sum / 10;
+                    ans[p2] = sum % 10;
+                }
+            }
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < ans.length;i++) {
+                if (i==0&&ans[0]==0)continue;
+                builder.append(ans[i]);
+            }
+            return builder.toString();
+        }
+        public static boolean isInterleave(String s1, String s2, String s3){
+            if(s1.length() + s2.length() != s3.length()) return false;
+
+            Boolean[][] memo = new Boolean[s1.length() + 1][s2.length() + 1];
+            return isInterleave(s1, s2, s3, 0, 0, memo);
+        }
+        public static boolean isInterleave(String s1, String s2, String s3, int i, int j, Boolean[][] memo) {
+            if((i+j) == s3.length()) return true;
+            String key = i + "," + j;
+            if(memo[i][j] != null) return memo[i][j];
+            // for s1
+            if (i < s1.length() && s3.charAt(i+j) == s1.charAt(i)){
+                boolean res = isInterleave(s1, s2, s3, i+1, j, memo);
+                memo[i][j] = res;
+                if(res) {
+                    return true;
+                }
+            }
+
+            // for s2
+            if (j < s2.length() && s3.charAt(i+j) == s2.charAt(j)){
+//                System.out.println(newS3);
+                boolean res = isInterleave(s1, s2, s3, i, j+1, memo);
+                memo[i][j] = res;
+                if(res) {
+                    return true;
+                }
+            }
+
+            memo[i][j] = false;
+            return false;
+        }
+        public static String largestNumber(int[] nums) {
+            // copy
+            String[] obj = new String[nums.length];
+            for (int i = 0; i < nums.length; i++) obj[i] = String.valueOf(nums[i]);
+
+            Arrays.sort(obj, (a, b) -> {
+                String as = a+b;
+                String bs = b+a;
+                return bs.compareTo(as);
+            });
+            StringBuilder ans = new StringBuilder();
+            for (String i : obj) {
+                if(ans.length() == 0 && Objects.equals(i, "0")) continue;
+                ans.append(i);
+            }
+            return ans.length() == 0 ? "0" : ans.toString();
+
+        }
+        static class WordDictionary {
+            private WordDictionary[] children;
+            public boolean isEndOfWord = false;
+            public WordDictionary() {
+                children = new WordDictionary[26];
+            }
+            public void addWord(String word) {
+                WordDictionary current = this;
+                for(char ch : word.toCharArray()){
+                    if(current.children[ch - 'a'] == null) current.children[ch - 'a'] = new WordDictionary();
+                    current = current.children[ch - 'a'];
+                }
+                current.isEndOfWord = true;
+            }
+
+            public boolean search(String word) {
+                WordDictionary current = this;
+                for (int i=0; i < word.length(); i++){
+                    char ch = word.charAt(i);
+                    if(ch == '.'){
+                        for (WordDictionary dictionary : current.children) {
+                            if(dictionary != null && dictionary.search(word.substring(i+1))) return true;
+                        }
+                        return false;
+                    }
+                    if(current.children[ch - 'a'] == null) return false;
+                    current = current.children[ch - 'a'];
+                }
+                return current != null && current.isEndOfWord;
+            }
+        }
+        static class Trie {
+
+            public Trie() {
+
+            }
+
+            public void insert(String word) {
+
+            }
+
+            public boolean search(String word) {
+
+            }
+
+            public boolean startsWith(String prefix) {
+
+            }
+        }
+
+
     }
 
     static class Tabulation{
@@ -380,7 +547,7 @@ public class DynamicProgramming {
 
 
     public static void main(String[] args) {
-        System.out.println(Memoization.reorganizeString("zhmyo"));
+        System.out.println(Memoization.largestNumber(new int[]{3,30,34,5,9}));
 
 //        System.out.println(DynamicProgramming.Memoization.videoStitching(new int[][]{{0,1},{6,8},{0,2},{5,6},{0,4},{0,3},{6,7},{1,3},{4,7},{1,4},{2,5},{2,6},{3,4},{4,5}
 //                ,{5,7},{6,9}}, 9));
