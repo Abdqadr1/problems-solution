@@ -474,7 +474,6 @@ public class DynamicProgramming {
             // copy
             String[] obj = new String[nums.length];
             for (int i = 0; i < nums.length; i++) obj[i] = String.valueOf(nums[i]);
-
             Arrays.sort(obj, (a, b) -> {
                 String as = a+b;
                 String bs = b+a;
@@ -489,7 +488,7 @@ public class DynamicProgramming {
 
         }
         static class WordDictionary {
-            private WordDictionary[] children;
+            private final WordDictionary[] children;
             public boolean isEndOfWord = false;
             public WordDictionary() {
                 children = new WordDictionary[26];
@@ -520,25 +519,63 @@ public class DynamicProgramming {
             }
         }
         static class Trie {
-
+            private final Trie[] children;
+            boolean isWord;
             public Trie() {
-
+                children = new Trie[26];
+                isWord = false;
             }
 
             public void insert(String word) {
-
+                Trie current = this;
+                for (char ch : word.toCharArray()){
+                    if(current.children[ch - 'a'] == null) current.children[ch - 'a'] = new Trie();
+                    current = current.children[ch - 'a'];
+                }
+                current.isWord = true;
             }
 
             public boolean search(String word) {
-
+                Trie current = this;
+                for (int i = 0; i < word.length(); i++) {
+                    char ch = word.charAt(i);
+                    if(current.children[ch - 'a'] == null) return false;
+                    current = current.children[ch - 'a'];
+                }
+                return current != null && current.isWord;
             }
 
             public boolean startsWith(String prefix) {
-
+                Trie current = this, root = this;
+                for (int i = 0; i < prefix.length(); i++) {
+                    char ch = prefix.charAt(i);
+                    if(current.children[ch - 'a'] == null) return false;
+                    current = current.children[ch - 'a'];
+                }
+                return current != root;
             }
         }
-
-
+        public static String removeKdigits(String num, int k) {
+            if(k >= num.length()) return "0";
+            Deque<Character> stack = new ArrayDeque<>();
+            for (char ch : num.toCharArray()){
+                while(k>0 && !stack.isEmpty() && stack.peekLast() > ch){
+                    stack.removeLast();
+                    k--;
+                }
+                stack.addLast(ch);
+            }
+            while(k > 0){
+                stack.removeLast();
+                k--;
+            }
+            while (stack.size() > 1 && stack.peekFirst() == '0'){
+                stack.removeFirst();
+            }
+            StringBuilder res = new StringBuilder();
+            while (!stack.isEmpty())res.append(stack.removeFirst());
+            return res.toString();
+        }
     }
 
     static class Tabulation{
@@ -547,7 +584,7 @@ public class DynamicProgramming {
 
 
     public static void main(String[] args) {
-        System.out.println(Memoization.largestNumber(new int[]{3,30,34,5,9}));
+        System.out.println(Memoization.removeKdigits("1432219",3));
 
 //        System.out.println(DynamicProgramming.Memoization.videoStitching(new int[][]{{0,1},{6,8},{0,2},{5,6},{0,4},{0,3},{6,7},{1,3},{4,7},{1,4},{2,5},{2,6},{3,4},{4,5}
 //                ,{5,7},{6,9}}, 9));
