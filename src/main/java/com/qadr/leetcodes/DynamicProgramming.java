@@ -1,6 +1,7 @@
 package com.qadr.leetcodes;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class DynamicProgramming {
     static class Memoization{
@@ -50,7 +51,7 @@ public class DynamicProgramming {
         }
         public static List<List<String>> allConstruct(String word, String[] wordBank){
             List<List<String>> result = new ArrayList<>();
-            allConstruct(word, wordBank, result, new ArrayList<String>());
+            allConstruct(word, wordBank, result, new ArrayList<>());
             return result;
         }
         private static void allConstruct(String word, String[] wordBank, List<List<String>> result, List<String> list) {
@@ -576,15 +577,357 @@ public class DynamicProgramming {
             while (!stack.isEmpty())res.append(stack.removeFirst());
             return res.toString();
         }
+        public static int numDecodings(String s) {
+            Map<Integer, Integer> memo = new HashMap<>();
+            return countDecodingWays(s, memo, 0);
+        }
+        public static int countDecodingWays(String s, Map<Integer, Integer> memo, int index) {
+            if(s.length() == index) return 1;
+            if(memo.containsKey(index)) return memo.get(index);
+            if(s.charAt(index) == '0'){
+                memo.put(index, 0);
+                return 0;
+            }
+            int count=0;
+            count += countDecodingWays(s, memo, index+1);
+            if(index+1 < s.length() && (s.charAt(index) == '1' || ( s.charAt(index) == '2' && s.charAt(index+1) < '7')))
+                count+= countDecodingWays(s, memo, index+2);
+
+            memo.put(index, count);
+            return count;
+        }
+        public static String removeDuplicateLetters(String s) {
+            if(s.length() == 1) return s;
+            int[] lastSeen = new int[26];
+            for (int i = 0; i <s.length(); i++) {
+                char ch = s.charAt(i);
+                lastSeen[ch - 'a'] = i;
+            }
+            boolean[] seen = new boolean[26];
+            Stack<Character> stack = new Stack<>();
+            for (int i =0;i < s.length(); i++){
+                char ch = s.charAt(i);
+                int index = ch - 'a';
+                if(seen[index]) continue;
+                while (!stack.isEmpty() && stack.peek() > ch &&  i < lastSeen[stack.peek() - 'a']){
+                    seen[stack.peek() - 'a'] = false;
+                    stack.pop();
+                }
+                stack.push(ch);
+                seen[index] = true;
+            }
+            StringBuilder res = new StringBuilder();
+            while (!stack.empty()) res.append(stack.pop());
+            return res.reverse().toString();
+        }
+        public static int maxProduct(String[] words) {
+            int result = 0;
+            int[] bitMask = new int[words.length];
+            for (int i = 0; i < words.length; i++) {
+                for (char ch : words[i].toCharArray()){
+                    bitMask[i] |= (1 << (ch - 'a'));
+                }
+            }
+            for (int i = 0; i < words.length-1; i++) {
+                String word1 = words[i];
+                for (int j = i+1; j < words.length; j++) {
+                    String word2 = words[j];
+                    if(word2.length() * word1.length() > result &&( bitMask[i] & bitMask[j]) == 0){
+                        result = word2.length() * word1.length();
+                    }
+                }
+            }
+            return result;
+        }
+        public static boolean isAdditiveNumber(String num) {
+            int n = num.length();
+            if(n < 3) return false;
+            for (int i = 1; i <= n/2; i++) {
+                for (int j = 1; Math.max(j, i) <= n - i - j; ++j) {
+                    if(isAdditiveNumber(i, j, num)) return true;
+                }
+            }
+            return false;
+        }
+        private static boolean isAdditiveNumber(int i, int j, String num) {
+            if (num.charAt(0) == '0' && i > 1) return false;
+            if (num.charAt(i) == '0' && j > 1) return false;
+            String sum;
+            long n1 = Long.parseLong(num.substring(0,i)), n2 = Long.parseLong(num.substring(i, i+j));
+            for (int start = i+j; start < num.length() ; start+= sum.length()) {
+                n2 = n1 + n2;
+                n1 = n2 - n1;
+                sum = String.valueOf(n2);
+                if(!num.startsWith(sum, start)) return false;
+            }
+            return true;
+        }
+        public static int minDistance(String word1, String word2) {
+            if(word1.equals(word2)) return 0;
+            Map<String, Integer> memo = new HashMap<>();
+            int res =  dPMinDistance(word1, word2, 0,memo);
+            return res > -1 ? res : 0;
+        }
+        public static int dPMinDistance(String word1, String word2, int count, Map<String, Integer> memo){
+            String key = word1 + "," + word2;
+            if(word1.equals(word2)) return count;
+            int min = -1, m= word1.length(), n = word2.length();
+            StringBuilder str = new StringBuilder("");
+            if(m>n) {
+                if(word1.contains(word2)) {
+                    int res = count + (m - n);
+                    memo.put(key, res);
+                    return res;
+                }
+                for (int i = 0; i < m; i++) {
+                    String sub = i+1 < m ? word1.substring(i+1) : "";
+                    String newStr = str+sub;
+                    str.append(word1.charAt(i));
+                    int res = dPMinDistance(newStr, word2, count+1, memo);
+                    if(min == -1 || res < min) min = res;
+                }
+            } else {
+                if(word2.contains(word1)) {
+                    int res =  count + (n - m);
+                    memo.put(key, res);
+                    return res;
+                }
+                for (int i = 0; i < n; i++) {
+                    String sub = i+1 < n ? word2.substring(i+1) : "";
+                    String newStr = str+sub;
+                    str.append(word2.charAt(i));
+                    int res = dPMinDistance(word1, newStr, count+1, memo);
+                    if(min == -1 || res < min) min = res;
+                }
+            }
+            memo.put(key, min);
+            return min;
+        }
+
+        public static int findMaxForm(String[] strs, int m, int n) {
+            int len = strs.length;
+            int[] freq = new int[2];
+            int[][] countArr = new int[len][2];
+            for (int i=0;i < len;i++){
+                String str = strs[i];
+                int zeros=0, ones = 0;
+                for (char ch : str.toCharArray()) {
+                    if (ch == '0') {
+                        zeros++;
+                    } else {
+                        ones++;
+                    }
+                }
+                freq[0] += zeros;
+                freq[1] += ones;
+                countArr[i][0] = zeros;
+                countArr[i][1] = ones;
+            }
+            int maxSub = 0;
+            System.out.println(Arrays.toString(freq));
+            for (int i = 0; i < len; i++) {
+                for (int j = len; j >= 0 ; j--) {
+                    int[] fr = new int[]{freq[0], freq[1]};
+                    for (int k = i; k < j; k++) {
+                        //sub array
+                        fr[0] -= countArr[k][0];
+                        fr[1] -= countArr[k][1];
+                        System.out.println(strs[k]);
+                    }
+                    System.out.println(Arrays.toString(fr));
+                    if(fr[0] >0 && fr[0] <= m && fr[1] > 0 && fr[1] <= n && (len - j-i) > maxSub) {
+                        maxSub = j - i + 1;
+                    }
+                    System.out.println("=====end=======");
+                }
+            }
+
+            return maxSub;
+        }
+
+        public static int minTargetSum(int[] nums, int amount){
+            if(amount == 0) return 0;
+            int res =  minTargetSum(nums, amount, 0);
+            return res >= Integer.MAX_VALUE-10 ? -1 : res;
+        }
+        private static int minTargetSum(int[] nums, int amount, int i) {
+            if(amount == 0) return 0;
+            if(i == nums.length) return Integer.MAX_VALUE-10;
+            if(nums[i] > amount){
+                return minTargetSum(nums, amount, i+1);
+            }else{
+                return Math.min(1 + minTargetSum(nums, amount - nums[i], i), minTargetSum(nums, amount, i+1));
+            }
+        }
+
     }
 
+
     static class Tabulation{
+        public static long fibonacci(int n){
+            if(n < 2) return n;
+            int[] table = new int[n+1];
+            table[1] = 1;
+            for (int i = 2; i <= n; i++) {
+                table[i] = table[i-1] + table[i-2];
+            }
+            return table[n];
+        }
+        public static long gridTraveler(int row, int col){
+            if(row==1 || col==1) return 1;
+            int[][] table = new int[row+1][col+1];
+            table[1][1] = 1;
+            for (int i = 0; i <= row; i++) {
+                for (int j = 0; j <= col; j++) {
+                    int current = table[i][j];
+                    if(j+1 <= col) table[i][j+1] += current;
+                    if(i+1 <= row) table[i+1][j] += current;
+                }
+            }
+            return table[row][col];
+        }
+        public static boolean canSum (int sum, int[] numbers){
+            if(sum == 0) return true;
+            boolean[] table = new boolean[sum+1];
+            table[0]=true;
+            for (int i = 0; i <= sum; i++) {
+                if(table[i]){
+                    for (int num : numbers){
+                        if(i+num <= sum) table[i+num] = true;
+                    }
+                }
+            }
+            return table[sum];
+        }
+        public static List<List<Integer>> allSum(int sum, int[] numbers){
+            if(sum == 0) return new ArrayList<>(new ArrayList<>());
+            List<List<Integer>>[] table = new ArrayList[sum + 1];
+            for (int i = 0; i < table.length; i++) {
+                if(i==0) {
+                    List<List<Integer>> res = new ArrayList<>();
+                    res.add(new ArrayList<>());
+                    table[i] = res;
+                }
+                else table[i] = new ArrayList<>();
+            }
+
+            for (int i = 0; i <= sum; i++) {
+                if(!table[i].isEmpty()){
+                    for(int num : numbers){
+                        if(i+num < table.length){
+                            table[i+num].addAll(
+                                table[i].stream()
+                                        .map(list -> {
+                                            List<Integer> res = new ArrayList<>(list);
+                                            res.add(num);
+                                            return res;
+                                        })
+                                        .collect(Collectors.toList())
+                            ) ;
+                        };
+                    }
+                }
+            }
+
+//            System.out.println(Arrays.toString(table));
+            return new ArrayList<>(table[sum]);
+        }
+        public static List<Integer> bestSum(int sum, int[] numbers){
+            if(sum == 0) return new ArrayList<>();
+            List<Integer>[] table = new ArrayList[sum+1];
+            table[0] = new ArrayList<>();
+            for (int i = 0; i <= sum; i++) {
+                if(table[i] != null){
+                    for (int num : numbers){
+                        if(i+num <= sum){
+                            List<Integer> res = new ArrayList<>(table[i]);
+                            res.add(num);
+                            if(table[i+num] == null || table[i+num].size()  > res.size()){
+                                table[i+num] = res;
+                            }
+                        }
+                    }
+                }
+            }
+            return table[sum];
+        }
+        public static boolean canConstruct(String word, String[] array){
+            if(word.isEmpty()) return true;
+            int len = word.length();
+            boolean[] table = new boolean[len + 1];
+            table[0] = true;
+            for (int i=0; i <= len; i++){
+                if(table[0]){
+                    for (String sub : array){
+                        if(word.startsWith(sub, i) && i+sub.length() <= len){
+                            table[i + sub.length()] = true;
+                        }
+                    }
+                }
+
+            }
+            return table[len];
+        }
+        public static int minTargetSumCoinChange(int[] nums, int amount){
+            if(amount == 0) return 0;
+            int n = nums.length;
+            int[][] table = new int[n+1][amount+1];
+            for (int i = 0; i <= n; i++) {
+                for (int j = 0; j <= amount; j++) {
+                    if(j==0){
+                        table[i][j] = 0;
+                    } else if(i == 0){
+                        table[i][j] = Integer.MAX_VALUE - 10;
+                    } else  if(nums[i-1] > j){
+                        table[i][j] = table[i-1][j];
+                    } else {
+                        table[i][j] = Math.min(1 + table[i][j-nums[i-1]], table[i-1][j]);
+                    }
+                }
+            }
+            System.out.println(Arrays.deepToString(table));
+            return table[n][amount] >= Integer.MAX_VALUE-10 ? -1 : table[n][amount];
+        }
+        public static int numberOfCombinationCoinChange(int[] nums, int amount){
+            if(amount == 0) return 1;
+            int len = nums.length;
+            int[][] table = new int[len+1][amount+1];
+            for (int i = 0; i <= len; i++) {
+                for (int j = 0; j <= amount; j++) {
+                    if(j==0){
+                        table[i][j] = 1;
+                    } else if (i==0){
+                        table[i][j] = 0;
+                    } else if (nums[i-1] > j){
+                        table[i][j] = table[i-1][j];
+                    } else {
+                        table[i][j] = table[i][j - nums[i-1]] + table[i-1][j];
+                    }
+                }
+            }
+            System.out.println(Arrays.deepToString(table));
+            return table[len][amount];
+        }
+        public static int maxPriceCutRod(int[] lengths, int[] prices, int rodLength){
+            if(rodLength == 0) return 0;
+            int len = lengths.length;
+            int[][] table = new int[len+1][rodLength+1];
+            for (int i = 0; i <= len; i++) {
+                for (int j = 0; j <= rodLength; j++) {
+                    if(j == 0) table[i][j] = 0;
+                    else if(i == 0) table[i][j] = 0;
+                    else if (lengths[i - 1] > j) table[i][j] = table[i-1][j];
+                    else table[i][j] = Math.max(prices[i-1] + table[i][j - lengths[i-1]], table[i-1][j]);
+                }
+            }
+            return table[len][rodLength];
+        }
 
     }
 
 
     public static void main(String[] args) {
-        System.out.println(Memoization.removeKdigits("1432219",3));
+        System.out.println(Tabulation.maxPriceCutRod(new int[]{1,2,3,4}, new int[]{1,5,8,7}, 4));
 
 //        System.out.println(DynamicProgramming.Memoization.videoStitching(new int[][]{{0,1},{6,8},{0,2},{5,6},{0,4},{0,3},{6,7},{1,3},{4,7},{1,4},{2,5},{2,6},{3,4},{4,5}
 //                ,{5,7},{6,9}}, 9));

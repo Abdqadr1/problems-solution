@@ -38,23 +38,28 @@ public class CodilityTest {
     }
     public int travelingLocations(int[] locations) {
         // write your code in Java SE 11
-        int min=Integer.MAX_VALUE, count=0;
-        boolean[] visited = new boolean[100000];
-        for (int dest : locations) {
-            if (!visited[dest]) {
-                count++;
-            }
-            visited[dest]=true;
-        }
-
+        int min=Integer.MAX_VALUE;
+        Set<Integer> cities = new HashSet<>();
+        for (int dest : locations) cities.add(dest);
+        int count = cities.size();
+        Map<Integer, Integer> lTimes = new HashMap<>();
+        int lastIndex = 0;
+        cities = new HashSet<>();
         for (int i = 0; i < locations.length-count; i++) {
-            Set<Integer> cities = new HashSet<>();
-            for (int j = i; j < locations.length; j++) {
-                cities.add(locations[j]);
-                if(count == cities.size()){
-                    min = Math.min(min, (j-i)+1);
-                    break;
-                }
+            if(i-1 >= 0){
+                int in = locations[i-1];
+                int freq = lTimes.getOrDefault(in, 0) - 1;
+                lTimes.put(in, freq);
+                if(freq < 1) cities.remove(in);
+            }
+            while(cities.size() < count && lastIndex < locations.length){
+                int in = locations[lastIndex++];
+                lTimes.put(in, lTimes.getOrDefault(in, 0) + 1);
+                cities.add(in);
+            }
+            if(cities.size() == count && lastIndex-i < min){
+//                System.out.println("new min: " + lastIndex + " and " + i);
+                min = lastIndex-i;
             }
         }
         return  min;
@@ -132,8 +137,8 @@ public class CodilityTest {
 
     public static void main(String[] args) {
         CodilityTest test = new CodilityTest();
-        System.out.println(test.travelingLocations(new int[]{7,3,7,3,1,3,4,1}));
-        System.out.println(longestPalSubstr("abcbadefqfed"));
+        System.out.println(test.travelingLocations(new int[]{1,2,3,7,2,7,3,1,3,4,1}));
+//        System.out.println(longestPalSubstr("abcbadefqfed"));
 //        System.out.println(test.solution(new int[]{0, 4, 3, -1}, 2));
 //        System.out.println(test.solution
 //                new String[]{"test1a", "test2", "test1b", "test3"},
